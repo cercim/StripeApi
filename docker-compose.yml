@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+
+  # ── nginx — front door ──────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: gate-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - gate-api
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── uvicorn — 350 async workers ─────────────────────────────────────────────
+  gate-api:
+    build: .
+    container_name: gate-api
+    restart: unless-stopped
+    expose:
+      - "8000"          # internal only — nginx is the public face
+    environment:
+      PORT: 8000
+      HOST: 0.0.0.0
+      WORKERS: 350
+      LOG_LEVEL: info
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
